@@ -101,13 +101,23 @@ gh auth login
 ```
 
 Follow the prompts and make sure `gh auth status` confirms you are logged in.
+For help with sign-in options, see the [GitHub CLI authentication guide](https://cli.github.com/manual/gh_auth_login).
 
 ### Clone the course repo
 
+Most students will not have permission to push directly to the course repository.
+Create a fork (your own copy on GitHub) and clone it with:
+
 ```bash
-git clone https://github.com/scottyUX/AI-Augmented-Software-Engineering.git
+gh repo fork scottyUX/AI-Augmented-Software-Engineering --clone
 cd AI-Augmented-Software-Engineering
+git remote -v
 ```
+
+Check that `origin` points to your GitHub username's fork. You will push your branch
+to that fork and open a pull request back to the course repository. See GitHub's
+[forking guide](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo)
+if you prefer to create the fork on the website.
 
 ### What to improve
 
@@ -148,12 +158,16 @@ Push your branch and open a PR:
 ```bash
 git push -u origin improve-assignment-clarity
 gh pr create \
-  --title "Improve clarity in Assignment 2" \
-  --body "Explains what I improved and why it helps future students."
+   --repo scottyUX/AI-Augmented-Software-Engineering \
+   --head YOUR_GITHUB_USERNAME:improve-assignment-clarity \
+   --title "Improve clarity in Week 1 setup assignment" \
+   --body "Clarifies a setup step and explains how the change helps future students."
 ```
 
-After you submit, the instructor will review the PR. If it is useful and correct,
-your suggestion may be merged into the official course materials.
+Replace `YOUR_GITHUB_USERNAME` with your GitHub username. The command targets the
+course repository; see [GitHub's guide to pull requests from forks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/creating-a-pull-request-from-a-fork)
+for more detail. After you submit, the instructor will review the PR. If it is useful
+and correct, your suggestion may be merged into the official course materials.
 
 ## Submission
 Your pull request appears on the course repo. The instructor will review it there.
