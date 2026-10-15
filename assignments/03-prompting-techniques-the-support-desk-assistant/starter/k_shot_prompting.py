@@ -12,8 +12,19 @@ from ollama import chat
 MODEL = "llama3.1:8b"
 NUM_RUNS = 5
 
-# TODO: Fill this in! Include a few labeled examples (k-shot) in the system prompt.
-YOUR_SYSTEM_PROMPT = ""
+YOUR_SYSTEM_PROMPT = """You are a support ticket classifier for an online store.
+Classify each customer message into exactly one label: billing, shipping, returns, technical, or other.
+Return only the label in lowercase, with no punctuation, no explanation, and no extra words.
+
+Examples:
+- Message: 'My card was charged twice for order 4412.' -> billing
+- Message: 'Where is my package? It's been two weeks.' -> shipping
+- Message: 'I want to send the shoes back for a refund.' -> returns
+- Message: 'The app crashes every time I open my cart.' -> technical
+- Message: 'Hi, can you tell me about your store hours?' -> other
+
+Use the examples as guidance. If unsure, choose other.
+"""
 
 CASES = [
     ("My card was charged twice for order 4412.", "billing"),
