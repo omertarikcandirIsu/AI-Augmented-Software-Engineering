@@ -20,17 +20,17 @@ def get_order_status(order_id: str) -> str:
     return FAKE_DB.get(order_id, "not found")
 
 
-# TODO: describe the tool so the model knows when and how to call it.
+# The description makes lookup mandatory for order-status questions and prevents guessed statuses.
 TOOLS = [
     {
         "type": "function",
         "function": {
             "name": "get_order_status",
-            "description": "",  # TODO
+            "description": "Look up the current status for a specific order. Use this whenever a customer asks about an order's status; do not guess.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "order_id": {"type": "string", "description": ""},  # TODO
+                    "order_id": {"type": "string", "description": "The order ID exactly as provided by the customer."},
                 },
                 "required": ["order_id"],
             },
@@ -38,8 +38,8 @@ TOOLS = [
     }
 ]
 
-# TODO: Fill this in! Tell the model to look up the order before answering.
-YOUR_SYSTEM_PROMPT = ""
+# Tell the model to ground its answer in the function result, not its prior knowledge.
+YOUR_SYSTEM_PROMPT = """When a customer asks for an order's status, extract the order ID and call get_order_status before replying. Use the returned status in a brief, helpful response. Never invent or assume an order status. If the customer did not provide an order ID, ask them for it instead of calling the tool."""
 
 
 def run() -> bool:

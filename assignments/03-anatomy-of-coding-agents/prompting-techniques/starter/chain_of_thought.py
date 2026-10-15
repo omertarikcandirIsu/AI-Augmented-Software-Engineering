@@ -17,8 +17,10 @@ POLICY = """Refund policy:
 - Final-sale items are never refundable.
 """
 
-# TODO: Fill this in! Encourage step-by-step reasoning, ending with DECISION: YES/NO.
-YOUR_SYSTEM_PROMPT = ""
+# Evaluate the policy criteria in order and keep the required decision line machine-readable.
+YOUR_SYSTEM_PROMPT = """Evaluate refund eligibility using every rule in the policy below.
+Check whether the purchase is within 30 days, the item is unused and in original condition, and the item is not final sale. A refund is eligible only when all conditions pass.
+Briefly state the result of each relevant check. End with exactly one final line: DECISION: YES or DECISION: NO. Do not put anything after that final line."""
 
 CASES = [
     ("Bought 10 days ago, unused, not final sale.", "YES"),

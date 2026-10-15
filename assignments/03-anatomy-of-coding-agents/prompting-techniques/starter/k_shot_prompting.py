@@ -12,8 +12,24 @@ from ollama import chat
 MODEL = "llama3.1:8b"
 NUM_RUNS = 5
 
-# TODO: Fill this in! Include a few labeled examples (k-shot) in the system prompt.
-YOUR_SYSTEM_PROMPT = ""
+# Few-shot examples show the exact label format and how to separate categories.
+YOUR_SYSTEM_PROMPT = """Classify each customer message into exactly one category: billing, shipping, returns, technical, or other.
+
+Examples:
+Message: My card was charged twice for order 4412.
+Label: billing
+
+Message: Where is my package? It has been two weeks.
+Label: shipping
+
+Message: I want to send these shoes back for a refund.
+Label: returns
+
+Message: The app crashes whenever I open my cart.
+Label: technical
+
+Choose the closest category. Use other only when none of the four specific categories fits.
+Output only the lowercase category label, with no explanation or punctuation."""
 
 CASES = [
     ("My card was charged twice for order 4412.", "billing"),

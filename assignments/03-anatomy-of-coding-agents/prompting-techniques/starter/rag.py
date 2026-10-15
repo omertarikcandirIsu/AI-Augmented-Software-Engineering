@@ -20,13 +20,38 @@ def load_chunks() -> list[str]:
         return [line.strip() for line in f if line.strip()]
 
 
-# TODO: return the subset of chunks relevant to `question` (simple keyword overlap is fine).
 def YOUR_RETRIEVER(question: str, chunks: list[str]) -> list[str]:
-    return []
+    stop_words = {
+        "a", "an", "and", "are", "do", "does", "for", "how", "i", "in",
+        "is", "it", "me", "my", "of", "the", "to", "we", "what", "you", "your",
+    }
+    variants = {
+        "internationally": "international",
+        "items": "item",
+        "returns": "return",
+        "shipping": "ship",
+        "shipped": "ship",
+    }
+
+    def terms(text: str) -> set[str]:
+        words = (word.strip(".,?!:;()[]{}\"'").lower() for word in text.split())
+        return {
+            variants.get(word, word)
+            for word in words
+            if word and word not in stop_words
+        }
+
+    question_terms = terms(question)
+    ranked = []
+    for index, chunk in enumerate(chunks):
+        score = len(question_terms & terms(chunk))
+        if score:
+            ranked.append((score, index, chunk))
+    ranked.sort(key=lambda item: (-item[0], item[1]))
+    return [chunk for _, _, chunk in ranked]
 
 
-# TODO: Fill this in! Force the model to answer only from the provided context.
-YOUR_SYSTEM_PROMPT = ""
+YOUR_SYSTEM_PROMPT = """Answer the customer's question using only the supplied help-center context. Do not add outside facts or guesses. If the context does not contain the answer, politely say exactly: I don't know based on the available information. Keep the answer concise and faithful to the context."""
 
 CASES = [
     ("How long do I have to return an item?", ["30 days"]),
