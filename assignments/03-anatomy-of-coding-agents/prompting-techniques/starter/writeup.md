@@ -54,9 +54,9 @@ When a customer asks for an order's status, extract the order ID and call get_or
 ```
 
 **Tool description:** “Look up the current status for a specific order. Use this whenever a customer asks about an order's status; do not guess.”
-**Sample:** “Hi, can you check on order 4412 for me?” → tool called with `order_id='4412'`; result: `shipped, arriving Friday`.
-**Check:** Passed; the model called the tool with the expected order ID.
-**What I learned:** Naming the tool's trigger and requiring lookup before answering steers the model toward an observable action rather than a guessed response.
+**Observed output:** For “Hi, can you check on order 4412 for me?”, the model called the tool with `order_id='4412'`. The starter's Python harness then called the local function and printed `shipped, arriving Friday`; it does not send that result back to the model for a follow-up response.
+**Check:** Passed; the built-in check verifies the tool call and order ID, not a model-generated answer using the returned status. The starter only permits edits in TODO sections, so the harness was left unchanged.
+**What I learned:** A tool schema can elicit the correct action, but a complete tool-use loop also needs the runtime to return the tool result to the model before expecting a grounded response.
 
 ## 4. Retrieval-augmented generation
 
