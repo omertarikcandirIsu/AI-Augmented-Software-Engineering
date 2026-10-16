@@ -1,0 +1,3 @@
+call,timestamp,model,input_token_count,output_token_count,cached_content_token_count,thoughts_token_count,tool_token_count,total_token_count
+1,2026-10-16T09:43:04.956Z,gemini-3.8-flash,14061,134,0,551,0,14746
+2,2026-10-16T09:43:15.356Z,gemini-3.8-flash,15110,154,0,333,0,15597
