@@ -4,9 +4,11 @@
 **Gemini CLI version (`gemini --version`):** 0.64.0
 **OS / shell:** macOS (Darwin 24.6.0) + zsh
 **Model(s) seen in trace:** `gemini-3.8-flash`, `gemini-3.5-flash-lite`
-**Commits:** 
-- baseline run: `3b46968` ("Week 3: baseline run (Gemini CLI's changes)")
-- ablated system prompt + hypothesis: `bf22e9d` / subsequent commit
+**Commits:**
+- Baseline run: `3b46968` ("Week 3: baseline run (Gemini CLI's changes)")
+- Ablated prompt + hypothesis: `db96728`
+- Ablation run 1: `d4b8764` (24 tests passed).
+- Ablation run 2: `0611f6f` (partial trace; quota stopped the run before code changes or final tests).
 
 > Evidence tags: `[OBSERVED]` = cite a timeline line, call number, or diff hunk.
 > `[INFERRED]` = say what you're reasoning from.
@@ -21,8 +23,10 @@ In `work/run-baseline/`, Gemini CLI 0.64.0 was launched with the prompt `"Read T
 | Metric | Value |
 |---|---|
 | User prompts | 1 `[OBSERVED: baseline_timeline.txt L25]` |
-| Model calls | 5 calls (2 errors: 1x 503 transient, 1x 429 quota) `[OBSERVED: baseline_timeline.txt L26]` |
-| Tool calls (failed) | 6 (0 failed) `[OBSERVED: baseline_timeline.txt L27]` |
+| Successful model responses | 5 `[OBSERVED: baseline_timeline.txt, Summary]` |
+| API errors | 2: one transient 503 and one terminal 429 quota error `[OBSERVED: baseline_timeline.txt L8, L22]` |
+| Tool calls | 6 `[OBSERVED: baseline_timeline.txt, Summary]` |
+| Failed tool calls | 0 `[OBSERVED: baseline_timeline.txt, Summary]` |
 | Final `pytest` result | FAILED (`2 failed, 12 passed in 0.02s`) `[OBSERVED: run-baseline tests]` |
 | Did you step in? When / what? | No user step-in during the autonomous baseline loop before the quota limit was reached `[OBSERVED: baseline_timeline.txt]`. |
 
@@ -219,7 +223,7 @@ User Prompt ("Read TASK.md...")
 **Why context grows:**
 Input tokens grow monotonically with every turn (from 11,363 on Call #3 to 14,220 on Call #5) because coding agents pass the complete conversational history—including previous model thoughts, tool call specifications, and file outputs (e.g., `TASK.md`, `pricing.py`, `test_cart.py`, pytest test failure trace)—in every subsequent prompt payload `[OBSERVED: baseline_calls.csv]`.
 **Context caching:**
-Context caching allows the LLM provider to cache the attention states of shared prompt prefixes (such as the 31KB system prompt and project context). When cached content tokens are high (e.g. 9,386 tokens cached in prior runs), only newly generated tokens are computed from scratch, reducing per-turn latency and drastically lowering API costs `[INFERRED]`.
+Every call in this baseline has `cached_content_token_count=0` `[OBSERVED: baseline_calls.csv]`, so this trace shows no cache reuse. In general, a nonzero value indicates input tokens served from cached content; reusing a prompt prefix can reduce repeated processing, latency, and billed input cost, depending on provider pricing `[INFERRED]`.
 
 ### 3. Planning
 The agent planned in plain text while coordinating its sub-goals via the `update_topic` tool (`title: "Investigating Requirements and Codebase"`, `strategic_intent: "Read TASK.md and explore the project to understand the task requirements"`) `[OBSERVED: baseline_timeline.txt L11]`. It adhered strictly to the user prompt ("Before changing any code, write out your plan") by reading all relevant files and running the test suite before touching any source files `[OBSERVED: baseline_timeline.txt L11-L20]`.
@@ -256,16 +260,16 @@ Total count of `run_shell_command` invocations containing `pytest`, and lines of
 
 | Metric | Baseline | Ablation run 1 | Ablation run 2 |
 |---|---|---|---|
-| Model calls | 5 | *Quota pending* | *Quota pending* |
-| Tool calls (by type) | 6 (4 read_file, 1 update_topic, 1 shell) | *Quota pending* | *Quota pending* |
-| Failed tool calls | 0 | *Quota pending* | *Quota pending* |
-| Total input tokens | 39,293 | *Quota pending* | *Quota pending* |
-| Ran tests? | Yes (`python -m pytest -q`) | *Quota pending* | *Quota pending* |
-| Final `pytest` | FAILED (2 failed, 12 passed) | *Quota pending* | *Quota pending* |
-| Lines changed (diff) | 0 | *Quota pending* | *Quota pending* |
+| Model calls | 5 responses (2 API errors) | 19 responses (7 API errors) | 2 responses (6 API errors; incomplete) |
+| Tool calls (by type) | 6 (4 read_file, 1 update_topic, 1 run_shell_command) | 21 (7 read_file, 5 run_shell_command, 4 update_topic, 4 replace, 1 grep_search) | 5 (3 read_file, 1 update_topic, 1 run_shell_command) |
+| Failed tool calls | 0 | 0 | 0 |
+| Total input tokens | 39,293 | 666,471 | 29,171 |
+| Ran tests? | Yes (`python -m pytest -q`) | Yes (before and after the changes) | Initial check invoked; no final test |
+| Final `pytest` | FAILED (2 failed, 12 passed) | PASSED (24 tests) | Not completed; quota blocked the run |
+| Lines changed (diff) | 0 | 111 (101 added, 10 removed) | 0 |
 
 **Was the hypothesis right?**
-The baseline run confirmed that under the full system prompt, the agent immediately prioritizes running tests (`python -m pytest -q`) during its initial discovery phase `[OBSERVED: baseline_timeline.txt L15]`. Ablation verification is pre-registered and ready for execution upon API quota reset.
+The completed first ablation run contradicts the hypothesis: the agent ran tests before and after implementation and added tests in both `tests/test_cart.py` and `tests/test_pricing.py` `[OBSERVED: ablation1_timeline.txt; ablation1 diff]`. Run 2 did not reach implementation because the API quota was exhausted, so it cannot confirm or contradict that result `[OBSERVED: ablation2_timeline.txt]`. After the run 1 agent stopped at its plan, I sent `Proceed with the plan and complete the task. Do not ask me for further input unless blocked.` to continue; this intervention is part of the run and may have influenced its behavior `[OBSERVED: ablation1_timeline.txt, USER entry at 07:52:04]`.
 
 **Variance — is the effect bigger than the noise? What would make you confident?**
-LLM agent trajectories exhibit high stochasticity (e.g. varying tool call order, tool argument formulation, and retry behavior). A single run is insufficient to prove causal prompt influence. Achieving statistical confidence requires multiple trials (at least 5–10 runs per condition) under identical seed/temperature conditions, measuring whether the distribution of test execution frequencies shifts significantly beyond normal run-to-run variance `[INFERRED]`.
+LLM agent trajectories exhibit high variability (e.g. tool order, tool arguments, and retry behavior). Run 2 is incomplete, so the effect cannot yet be compared against run-to-run variation. Complete run 2 with the same model, ablated prompt, task prompt, and continuation message; more repeated runs under identical conditions would provide stronger evidence `[INFERRED]`.
